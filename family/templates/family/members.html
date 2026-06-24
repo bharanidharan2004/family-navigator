@@ -1,0 +1,38 @@
+{% extends 'family/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>👨‍👩‍👧 Family Members</h2>
+    <a href="/members/add/" class="btn btn-dark">+ Add Member</a>
+</div>
+
+{% if members %}
+<table class="table table-bordered table-hover bg-white shadow-sm">
+    <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Gender</th>
+            <th>Date of Birth</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for person in members %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ person.name }}</td>
+            <td>{{ person.gender }}</td>
+            <td>{{ person.date_of_birth|default:"Not set" }}</td>
+            <td>
+                <a href="/members/edit/{{ person.pk }}/" class="btn btn-sm btn-warning">Edit</a>
+                <a href="/members/delete/{{ person.pk }}/" class="btn btn-sm btn-danger"
+                   onclick="return confirm('Delete {{ person.name }}?')">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info">No family members added yet. Click + Add Member to start!</div>
+{% endif %}
+{% endblock %}

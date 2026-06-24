@@ -1,0 +1,49 @@
+{% extends 'family/base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow">
+      <div class="card-body p-4">
+        <h3 class="mb-4 text-center">🔍 Find Relationship</h3>
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Person 1 (You)</label>
+            <select name="person1" class="form-control">
+              {% for member in members %}
+              <option value="{{ member.pk }}">{{ member.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Person 2 (Relative)</label>
+            <select name="person2" class="form-control">
+              {% for member in members %}
+              <option value="{{ member.pk }}">{{ member.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-dark w-100">Find Relationship</button>
+        </form>
+
+        {% if result %}
+        <div class="mt-4 text-center">
+          <h4>Result:</h4>
+          <div class="alert alert-success">
+            <h3>{{ result.0 }}</h3>
+            <h4>{{ result.1 }}</h4>
+          </div>
+          {% if path_names %}
+          <div class="alert alert-info">
+            <strong>Path:</strong><br>
+            {{ path_names|join:" → " }}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

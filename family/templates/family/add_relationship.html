@@ -1,0 +1,46 @@
+{% extends 'family/base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow">
+      <div class="card-body p-4">
+        <h3 class="mb-4">Add Relationship</h3>
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Person 1</label>
+            <select name="person1" class="form-control">
+              {% for member in members %}
+              <option value="{{ member.pk }}">{{ member.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Relationship</label>
+            <select name="relation_type" class="form-control">
+              <option value="father">Father</option>
+              <option value="mother">Mother</option>
+              <option value="brother">Brother</option>
+              <option value="sister">Sister</option>
+              <option value="husband">Husband</option>
+              <option value="wife">Wife</option>
+              <option value="son">Son</option>
+              <option value="daughter">Daughter</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Person 2</label>
+            <select name="person2" class="form-control">
+              {% for member in members %}
+              <option value="{{ member.pk }}">{{ member.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-dark w-100">Add Relationship</button>
+          <a href="/relationships/" class="btn btn-secondary w-100 mt-2">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

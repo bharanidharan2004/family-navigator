@@ -1,0 +1,571 @@
+{% extends 'family/base.html' %}
+{% block content %}
+<style>
+#tree-wrapper {
+    position: relative;
+    width: 100%;
+    height: 700px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+#tree-container {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 40%, #0f3460 100%);
+    cursor: grab;
+}
+#tree-container:active { cursor: grabbing; }
+
+/* Controls */
+#controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10;
+}
+.ctrl-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.ctrl-btn:hover { background: rgba(255,255,255,0.3); }
+
+/* Fullscreen */
+#fullscreen-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+}
+
+/* Route finder */
+#route-panel {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(15,20,40,0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 14px;
+    z-index: 10;
+    width: 240px;
+    color: white;
+}
+#route-panel h6 {
+    color: #f6ad55;
+    margin-bottom: 10px;
+    font-size: 13px;
+    letter-spacing: 1px;
+}
+#route-panel select {
+    width: 100%;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    color: white;
+    padding: 5px 8px;
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+#route-panel select option { background: #1a1a2e; }
+#find-btn {
+    width: 100%;
+    background: linear-gradient(90deg, #f6ad55, #e53e3e);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 6px;
+    cursor: pointer;
+    letter-spacing: 1px;
+}
+#find-btn:hover { opacity: 0.85; }
+#route-result {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #a0aec0;
+    display: none;
+}
+#route-result .rel-name {
+    color: #f6ad55;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+/* Tooltip */
+#tooltip {
+    position: absolute;
+    background: rgba(15,20,40,0.95);
+    border: 1px solid rgba(246,173,85,0.5);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: white;
+    font-size: 12px;
+    pointer-events: none;
+    display: none;
+    z-index: 20;
+    min-width: 150px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+#tooltip .tt-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #f6ad55;
+    margin-bottom: 4px;
+}
+
+/* Minimap */
+#minimap {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 140px;
+    height: 90px;
+    background: rgba(15,20,40,0.8);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 10;
+}
+
+/* Legend */
+#legend {
+    position: absolute;
+    top: 180px;
+    left: 12px;
+    background: rgba(15,20,40,0.85);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: white;
+    font-size: 11px;
+    z-index: 10;
+}
+#legend div { margin: 4px 0; display: flex; align-items: center; gap: 8px; }
+.leg-male { width:18px; height:12px; background:#1a73e8; border:1.5px solid #a8d1ff; border-radius:3px; }
+.leg-female { width:14px; height:14px; background:#c2185b; border:1.5px solid #ffb3d9; border-radius:50%; }
+.leg-line { width:20px; height:3px; background:#f6ad55; }
+.leg-path { width:20px; height:3px; background:#00ff88; }
+</style>
+
+<h2>🌳 Family Tree</h2>
+<div id="tree-wrapper">
+    <!-- Route Finder Panel -->
+    <div id="route-panel">
+        <h6>🗺️ RELATIONSHIP FINDER</h6>
+        <select id="origin">
+            {% for member in members %}<option value="{{ member.id }}">{{ member.name }}</option>{% endfor %}
+        </select>
+        <div style="text-align:center; font-size:11px; color:#a0aec0; margin-bottom:6px;">▼ TO ▼</div>
+        <select id="destination">
+            {% for member in members %}<option value="{{ member.id }}">{{ member.name }}</option>{% endfor %}
+        </select>
+        <button id="find-btn">🔍 FIND RELATIONSHIP</button>
+        <div id="route-result"></div>
+    </div>
+
+    <!-- Legend -->
+    <div id="legend">
+        <div><div class="leg-male"></div> Male</div>
+        <div><div class="leg-female"></div> Female</div>
+        <div><div class="leg-line"></div> Married</div>
+        <div><div class="leg-path"></div> Path</div>
+    </div>
+
+    <!-- Controls -->
+    <div id="controls">
+        <button class="ctrl-btn" id="zoom-in">+</button>
+        <button class="ctrl-btn" id="zoom-out">−</button>
+        <button class="ctrl-btn" id="reset-btn" title="Reset">⌂</button>
+        <button class="ctrl-btn" id="fullscreen-btn" title="Fullscreen">⛶</button>
+    </div>
+
+    <!-- Main SVG -->
+    <div id="tree-container"></div>
+
+    <!-- Minimap -->
+    <div id="minimap"><svg id="minimap-svg" width="140" height="90"></svg></div>
+
+    <!-- Tooltip -->
+    <div id="tooltip">
+        <div class="tt-name" id="tt-name"></div>
+        <div id="tt-gender"></div>
+        <div id="tt-dob"></div>
+        <div id="tt-rels"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script>
+const allNodes = {{ nodes|safe }};
+const allLinks = {{ links|safe }};
+const memberDetails = {{ members_json|safe }};
+
+const wrapper = document.getElementById('tree-wrapper');
+const width = wrapper.offsetWidth;
+const height = 700;
+const nodeW = 100, nodeH = 44, nodeR = 30;
+const genHeight = 170;
+
+// ── Assign generations ──
+const childTypes = new Set(['son','daughter']);
+const parentTypes = new Set(['father','mother']);
+const hasParent = new Set();
+allLinks.forEach(l => { if(childTypes.has(l.type)) hasParent.add(l.source); });
+const roots = allNodes.filter(n => !hasParent.has(n.id));
+const genMap = {};
+const visited = new Set();
+const q = [...roots.map(r => ({id: r.id, gen: 0}))];
+while(q.length) {
+    const {id, gen} = q.shift();
+    if(visited.has(id)) continue;
+    visited.add(id);
+    genMap[id] = gen;
+    allLinks.forEach(l => {
+        if(l.source === id && childTypes.has(l.type) && !visited.has(l.target))
+            q.push({id: l.target, gen: gen+1});
+        if(l.target === id && parentTypes.has(l.type) && !visited.has(l.source))
+            q.push({id: l.source, gen: gen-1});
+    });
+}
+const minGen = Math.min(0, ...Object.values(genMap));
+allNodes.forEach(n => { if(genMap[n.id]===undefined) genMap[n.id]=0; else genMap[n.id]-=minGen; });
+
+// ── Group by generation ──
+const genGroups = {};
+allNodes.forEach(n => {
+    const g = genMap[n.id];
+    if(!genGroups[g]) genGroups[g]=[];
+    genGroups[g].push(n);
+});
+
+// ── Assign positions ──
+const nodePos = {};
+Object.keys(genGroups).sort((a,b)=>a-b).forEach(gen => {
+    const group = genGroups[gen];
+    const totalW = group.length * 160;
+    const startX = (width - totalW) / 2 + 80;
+    group.forEach((n,i) => {
+        nodePos[n.id] = { x: startX + i*160, y: 80 + gen*genHeight };
+    });
+});
+
+// ── SVG Setup ──
+const svg = d3.select('#tree-container')
+    .append('svg')
+    .attr('width', width)
+    .attr('height', height);
+
+const zoomBehavior = d3.zoom()
+    .scaleExtent([0.3, 3])
+    .on('zoom', (event) => {
+        mainG.attr('transform', event.transform);
+        updateMinimap(event.transform);
+        // Labels scale with zoom
+        const scale = event.transform.k;
+        mainG.selectAll('.node-label').style('font-size', Math.max(8, 12/scale*scale) + 'px');
+    });
+
+svg.call(zoomBehavior);
+const mainG = svg.append('g');
+
+// ── Stars background ──
+for(let i=0; i<80; i++){
+    mainG.append('circle')
+        .attr('cx', Math.random()*width*2-width/2)
+        .attr('cy', Math.random()*height*2-height/2)
+        .attr('r', Math.random()*1.5+0.3)
+        .attr('fill', `rgba(255,255,255,${Math.random()*0.6+0.2})`);
+}
+
+// ── Generation lanes ──
+const genLabels = ['GRANDPARENTS','PARENTS','CHILDREN','GRANDCHILDREN','GEN 5'];
+Object.keys(genGroups).sort((a,b)=>a-b).forEach(gen => {
+    mainG.append('rect')
+        .attr('x', -500).attr('y', 50 + gen*genHeight)
+        .attr('width', width+1000).attr('height', genHeight)
+        .attr('fill', gen%2===0 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.04)')
+        .attr('stroke', 'rgba(255,255,255,0.05)');
+    mainG.append('text')
+        .attr('x', 10).attr('y', 70 + gen*genHeight)
+        .attr('fill', 'rgba(255,255,255,0.2)')
+        .attr('font-size', '10px')
+        .attr('letter-spacing', '2px')
+        .text(genLabels[gen] || `GEN ${gen}`);
+});
+
+// ── BFS for path finding ──
+function bfsPath(startId, endId) {
+    if(startId === endId) return [startId];
+    const visited = new Set([startId]);
+    const queue = [[startId]];
+    // Build adjacency
+    const adj = {};
+    allLinks.forEach(l => {
+        if(!adj[l.source]) adj[l.source] = [];
+        if(!adj[l.target]) adj[l.target] = [];
+        adj[l.source].push(l.target);
+        adj[l.target].push(l.source);
+    });
+    while(queue.length) {
+        const path = queue.shift();
+        const curr = path[path.length-1];
+        for(const nb of (adj[curr]||[])) {
+            if(!visited.has(nb)) {
+                const newPath = [...path, nb];
+                if(nb === endId) return newPath;
+                visited.add(nb);
+                queue.push(newPath);
+            }
+        }
+    }
+    return null;
+}
+
+// ── Draw parent-child links ──
+const linkG = mainG.append('g').attr('class','links');
+allLinks.filter(l => (parentTypes.has(l.type)||childTypes.has(l.type)) && nodePos[l.source] && nodePos[l.target])
+.forEach(l => {
+    const s = nodePos[l.source], t = nodePos[l.target];
+    const midY = (s.y+t.y)/2;
+    linkG.append('path')
+        .attr('class','plink')
+        .attr('d', `M${s.x},${s.y} C${s.x},${midY} ${t.x},${midY} ${t.x},${t.y}`)
+        .attr('fill','none').attr('stroke','rgba(160,174,192,0.6)').attr('stroke-width',1.5);
+});
+
+// ── Draw couple links ──
+allLinks.filter(l => (l.type==='husband'||l.type==='wife') && nodePos[l.source] && nodePos[l.target])
+.forEach(l => {
+    const s = nodePos[l.source], t = nodePos[l.target];
+    linkG.append('line').attr('x1',s.x).attr('y1',s.y-4).attr('x2',t.x).attr('y2',t.y-4)
+        .attr('stroke','#f6ad55').attr('stroke-width',3);
+    linkG.append('line').attr('x1',s.x).attr('y1',s.y+4).attr('x2',t.x).attr('y2',t.y+4)
+        .attr('stroke','#f6ad55').attr('stroke-width',1.5).attr('stroke-dasharray','4,3');
+    linkG.append('text')
+        .attr('x',(s.x+t.x)/2).attr('y',(s.y+t.y)/2-10)
+        .attr('text-anchor','middle').attr('font-size','14px').text('❤️');
+});
+
+// ── Path highlight group ──
+const pathG = mainG.append('g').attr('class','path-group');
+
+// ── Draw nodes ──
+const nodeG = mainG.append('g').attr('class','nodes');
+const tooltip = document.getElementById('tooltip');
+
+allNodes.forEach(n => {
+    if(!nodePos[n.id]) return;
+    const {x,y} = nodePos[n.id];
+    const g = nodeG.append('g')
+        .attr('transform', `translate(${x},${y})`)
+        .attr('class', 'node')
+        .attr('data-id', n.id)
+        .style('cursor','pointer');
+
+    // Glow filter
+    const defs = svg.append('defs');
+    const filter = defs.append('filter').attr('id',`glow-${n.id}`);
+    filter.append('feGaussianBlur').attr('stdDeviation','4').attr('result','coloredBlur');
+    const feMerge = filter.append('feMerge');
+    feMerge.append('feMergeNode').attr('in','coloredBlur');
+    feMerge.append('feMergeNode').attr('in','SourceGraphic');
+
+    if(n.gender==='male') {
+        g.append('rect')
+            .attr('x',-nodeW/2).attr('y',-nodeH/2)
+            .attr('width',nodeW).attr('height',nodeH)
+            .attr('rx',7)
+            .attr('fill','#1a73e8').attr('stroke','#a8d1ff').attr('stroke-width',2)
+            .style('filter',`url(#glow-${n.id})`);
+        g.append('text').attr('x',nodeW/2-8).attr('y',-nodeH/2+13)
+            .attr('font-size','10px').attr('fill','#a8d1ff').text('♂');
+    } else {
+        g.append('circle').attr('r',nodeR)
+            .attr('fill','#c2185b').attr('stroke','#ffb3d9').attr('stroke-width',2)
+            .style('filter',`url(#glow-${n.id})`);
+        g.append('text').attr('x',nodeR-8).attr('y',-nodeR+13)
+            .attr('font-size','10px').attr('fill','#ffb3d9').text('♀');
+    }
+
+    const shortName = n.name.length>10 ? n.name.substring(0,10)+'…' : n.name;
+    g.append('text').attr('class','node-label')
+        .attr('text-anchor','middle').attr('dy',4)
+        .attr('font-size','12px').attr('font-weight','bold')
+        .attr('fill','white').text(shortName);
+
+    // ── Hover tooltip ──
+    const detail = memberDetails.find(m=>m.id===n.id) || {};
+    g.on('mouseover', function(event) {
+        const connCount = allLinks.filter(l=>l.source===n.id||l.target===n.id).length;
+        document.getElementById('tt-name').textContent = n.name;
+        document.getElementById('tt-gender').textContent = '👤 ' + (n.gender==='male'?'Male':'Female');
+        document.getElementById('tt-dob').textContent = detail.dob ? '🎂 ' + detail.dob : '🎂 DOB not set';
+        document.getElementById('tt-rels').textContent = '🔗 ' + connCount + ' connections';
+        tooltip.style.display = 'block';
+        tooltip.style.left = (event.offsetX+15)+'px';
+        tooltip.style.top = (event.offsetY-10)+'px';
+        // Highlight connections
+        highlightConnections(n.id);
+    })
+    .on('mousemove', function(event) {
+        tooltip.style.left = (event.offsetX+15)+'px';
+        tooltip.style.top = (event.offsetY-10)+'px';
+    })
+    .on('mouseout', function() {
+        tooltip.style.display = 'none';
+        clearHighlight();
+    });
+});
+
+// ── Highlight connections ──
+function highlightConnections(nodeId) {
+    const connectedIds = new Set([nodeId]);
+    allLinks.forEach(l => {
+        if(l.source===nodeId) connectedIds.add(l.target);
+        if(l.target===nodeId) connectedIds.add(l.source);
+    });
+    nodeG.selectAll('.node').each(function(d) {
+        const id = +this.getAttribute('data-id');
+        d3.select(this).style('opacity', connectedIds.has(id) ? 1 : 0.3);
+    });
+}
+
+function clearHighlight() {
+    nodeG.selectAll('.node').style('opacity', 1);
+}
+
+// ── Route finder ──
+document.getElementById('find-btn').addEventListener('click', () => {
+    const originId = +document.getElementById('origin').value;
+    const destId = +document.getElementById('destination').value;
+    pathG.selectAll('*').remove();
+
+    if(originId === destId) {
+        showRouteResult('Same person!', '', []);
+        return;
+    }
+
+    const path = bfsPath(originId, destId);
+    if(!path) {
+        showRouteResult('No connection found', '', []);
+        return;
+    }
+
+    // Draw glowing path
+    for(let i=0; i<path.length-1; i++) {
+        const s = nodePos[path[i]], t = nodePos[path[i+1]];
+        if(!s || !t) continue;
+        // Animated glow line
+        pathG.append('line')
+            .attr('x1',s.x).attr('y1',s.y).attr('x2',t.x).attr('y2',t.y)
+            .attr('stroke','rgba(0,255,136,0.3)').attr('stroke-width',12);
+        pathG.append('line')
+            .attr('x1',s.x).attr('y1',s.y).attr('x2',t.x).attr('y2',t.y)
+            .attr('stroke','#00ff88').attr('stroke-width',3)
+            .attr('stroke-dasharray','8,4')
+            .append('animate')
+            .attr('attributeName','stroke-dashoffset')
+            .attr('from','0').attr('to','-24')
+            .attr('dur','0.8s').attr('repeatCount','indefinite');
+
+        // Step number
+        const mx=(s.x+t.x)/2, my=(s.y+t.y)/2;
+        pathG.append('circle').attr('cx',mx).attr('cy',my).attr('r',10)
+            .attr('fill','#00ff88');
+        pathG.append('text').attr('x',mx).attr('y',my+4)
+            .attr('text-anchor','middle').attr('font-size','10px')
+            .attr('font-weight','bold').attr('fill','#0d0d1a').text(i+1);
+    }
+
+    // Highlight path nodes
+    nodeG.selectAll('.node').each(function() {
+        const id = +this.getAttribute('data-id');
+        d3.select(this).style('opacity', path.includes(id) ? 1 : 0.25);
+    });
+
+    const pathNames = path.map(id => allNodes.find(n=>n.id===id)?.name || id);
+    showRouteResult(`${path.length-1} step(s) away`, pathNames.join(' → '), path);
+
+    // Center on path
+    const xs = path.map(id=>nodePos[id]?.x||0);
+    const ys = path.map(id=>nodePos[id]?.y||0);
+    const cx = (Math.min(...xs)+Math.max(...xs))/2;
+    const cy = (Math.min(...ys)+Math.max(...ys))/2;
+    svg.transition().duration(800).call(
+        zoomBehavior.transform,
+        d3.zoomIdentity.translate(width/2-cx, height/2-cy).scale(1)
+    );
+});
+
+function showRouteResult(distance, path, ids) {
+    const el = document.getElementById('route-result');
+    el.style.display = 'block';
+    el.innerHTML = `<div class="rel-name">${distance}</div>${path ? '<div style="margin-top:6px;color:#68d391;font-size:11px;">'+path+'</div>' : ''}`;
+}
+
+// ── Zoom controls ──
+document.getElementById('zoom-in').addEventListener('click', () => {
+    svg.transition().duration(300).call(zoomBehavior.scaleBy, 1.4);
+});
+document.getElementById('zoom-out').addEventListener('click', () => {
+    svg.transition().duration(300).call(zoomBehavior.scaleBy, 0.7);
+});
+document.getElementById('reset-btn').addEventListener('click', () => {
+    pathG.selectAll('*').remove();
+    nodeG.selectAll('.node').style('opacity',1);
+    document.getElementById('route-result').style.display='none';
+    svg.transition().duration(600).call(
+        zoomBehavior.transform, d3.zoomIdentity.translate(0,0).scale(1)
+    );
+});
+
+// ── Fullscreen ──
+document.getElementById('fullscreen-btn').addEventListener('click', () => {
+    const el = document.getElementById('tree-wrapper');
+    if(!document.fullscreenElement) el.requestFullscreen();
+    else document.exitFullscreen();
+});
+
+// ── Minimap ──
+const mmSvg = d3.select('#minimap-svg');
+const scaleX = 140/width, scaleY = 90/height;
+allNodes.forEach(n => {
+    if(!nodePos[n.id]) return;
+    mmSvg.append(n.gender==='male'?'rect':'circle')
+        .attr(n.gender==='male'?'x':'cx', nodePos[n.id].x*scaleX - (n.gender==='male'?4:0))
+        .attr(n.gender==='male'?'y':'cy', nodePos[n.id].y*scaleY - (n.gender==='male'?3:0))
+        .attr(n.gender==='male'?'width':'r', n.gender==='male'?8:4)
+        .attr(n.gender==='male'?'height':null, n.gender==='male'?6:null)
+        .attr('fill', n.gender==='male'?'#1a73e8':'#c2185b');
+});
+
+const mmViewport = mmSvg.append('rect')
+    .attr('fill','none').attr('stroke','#f6ad55').attr('stroke-width',1.5)
+    .attr('x',0).attr('y',0).attr('width',140).attr('height',90);
+
+function updateMinimap(transform) {
+    const vx = -transform.x * scaleX / transform.k;
+    const vy = -transform.y * scaleY / transform.k;
+    const vw = 140 / transform.k;
+    const vh = 90 / transform.k;
+    mmViewport.attr('x',vx).attr('y',vy).attr('width',vw).attr('height',vh);
+}
+</script>
+{% endblock %}

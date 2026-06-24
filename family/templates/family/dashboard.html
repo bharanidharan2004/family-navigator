@@ -1,0 +1,72 @@
+{% extends 'family/base.html' %}
+{% block content %}
+<!-- Hero -->
+<div style="text-align:center; padding: 40px 0 50px;">
+    <div style="font-size:48px; margin-bottom:16px;">🌳</div>
+    <h1 style="font-family:'Cinzel',serif; font-size:32px; color:var(--gold); margin-bottom:8px;">
+        Welcome, {{ user.username }}
+    </h1>
+    <p style="color:var(--text-muted); font-size:15px;">Your family heritage, beautifully organized</p>
+    <div class="gold-divider" style="max-width:300px; margin:24px auto;"></div>
+</div>
+
+<!-- Stats -->
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:40px;">
+    <div class="frn-card" style="text-align:center;">
+        <div style="font-size:32px; color:var(--gold); font-family:'Cinzel',serif; font-weight:700;">{{ member_count }}</div>
+        <div style="color:var(--text-muted); font-size:13px; margin-top:4px;">Family Members</div>
+    </div>
+    <div class="frn-card" style="text-align:center;">
+        <div style="font-size:32px; color:var(--gold); font-family:'Cinzel',serif; font-weight:700;">{{ relationship_count }}</div>
+        <div style="color:var(--text-muted); font-size:13px; margin-top:4px;">Relationships</div>
+    </div>
+    <div class="frn-card" style="text-align:center;">
+        <div style="font-size:32px; color:var(--gold); font-family:'Cinzel',serif; font-weight:700;">{{ generation_count }}</div>
+        <div style="color:var(--text-muted); font-size:13px; margin-top:4px;">Generations</div>
+    </div>
+</div>
+
+<!-- Navigation Cards -->
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:20px;">
+    <a href="/members/" style="text-decoration:none;">
+        <div class="frn-card" style="display:flex; align-items:center; gap:20px;">
+            <div style="font-size:36px;">👨‍👩‍👧</div>
+            <div>
+                <div style="font-family:'Cinzel',serif; font-size:16px; color:var(--gold); margin-bottom:4px;">Family Members</div>
+                <div style="color:var(--text-muted); font-size:13px;">Add and manage your family members</div>
+            </div>
+            <div style="margin-left:auto; color:var(--gold); font-size:20px;">→</div>
+        </div>
+    </a>
+    <a href="/relationships/" style="text-decoration:none;">
+        <div class="frn-card" style="display:flex; align-items:center; gap:20px;">
+            <div style="font-size:36px;">🔗</div>
+            <div>
+                <div style="font-family:'Cinzel',serif; font-size:16px; color:var(--gold); margin-bottom:4px;">Relationships</div>
+                <div style="color:var(--text-muted); font-size:13px;">Link and manage family connections</div>
+            </div>
+            <div style="margin-left:auto; color:var(--gold); font-size:20px;">→</div>
+        </div>
+    </a>
+    <a href="/find/" style="text-decoration:none;">
+        <div class="frn-card" style="display:flex; align-items:center; gap:20px;">
+            <div style="font-size:36px;">🔍</div>
+            <div>
+                <div style="font-family:'Cinzel',serif; font-size:16px; color:var(--gold); margin-bottom:4px;">Find Relationship</div>
+                <div style="color:var(--text-muted); font-size:13px;">Discover how two members are related</div>
+            </div>
+            <div style="margin-left:auto; color:var(--gold); font-size:20px;">→</div>
+        </div>
+    </a>
+    <a href="/tree/" style="text-decoration:none;">
+        <div class="frn-card" style="display:flex; align-items:center; gap:20px;">
+            <div style="font-size:36px;">🌳</div>
+            <div>
+                <div style="font-family:'Cinzel',serif; font-size:16px; color:var(--gold); margin-bottom:4px;">Family Tree</div>
+                <div style="color:var(--text-muted); font-size:13px;">Visualize your interactive family tree</div>
+            </div>
+            <div style="margin-left:auto; color:var(--gold); font-size:20px;">→</div>
+        </div>
+    </a>
+</div>
+{% endblock %}  

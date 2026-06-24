@@ -1,0 +1,37 @@
+{% extends 'family/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>🔗 Relationships</h2>
+    <a href="/relationships/add/" class="btn btn-dark">+ Add Relationship</a>
+</div>
+
+{% if relationships %}
+<table class="table table-bordered table-hover bg-white shadow-sm">
+    <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Person 1</th>
+            <th>Relation</th>
+            <th>Person 2</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for rel in relationships %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ rel.person1.name }}</td>
+            <td>{{ rel.relation_type }}</td>
+            <td>{{ rel.person2.name }}</td>
+            <td>
+                <a href="/relationships/delete/{{ rel.pk }}/" class="btn btn-sm btn-danger"
+                onclick="return confirm('Delete this relationship?')">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info">No relationships added yet. Click + Add Relationship to start!</div>
+{% endif %}
+{% endblock %}
